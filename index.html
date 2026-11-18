@@ -44,7 +44,14 @@ footer{display:flex;align-items:center;justify-content:space-between;gap:16px;pa
 .nav:disabled{opacity:.3;cursor:default}
 .nav svg{width:18px;height:18px}
 .count{font-size:13px;color:var(--soft);min-width:72px;text-align:center;font-variant-numeric:tabular-nums}
-.book.single .leaf{left:0;width:100%}
+.book.single .leaf{left:0;width:100%;transition:transform 1.2s cubic-bezier(.645,.045,.355,1)}
+.book.single .leaf.gone{visibility:hidden}
+.book.single{transition:transform .45s cubic-bezier(.4,0,.2,1)}
+.book.single.zoom{transform:translateX(27.5%) scale(.55)!important}
+.book.single .face.back{display:block;background:linear-gradient(270deg,#cfd2d8 0%,#eef0f3 10%,#f7f8fa 100%)}
+.book.single .face.back::after{background:linear-gradient(90deg,rgba(26,35,54,.0) 60%,rgba(26,35,54,.12) 100%)}
+.book.single::before{content:"";position:absolute;top:1%;bottom:1%;right:-7px;width:7px;background:repeating-linear-gradient(90deg,#dfe1e6 0 1px,#b9bdc5 1px 2px);border-radius:0 2px 2px 0;transform:translateZ(-1px)}
+.book.single .spine{position:absolute;left:-6px;top:0;bottom:0;width:6px;background:linear-gradient(90deg,#0d1320,#1A2336);border-radius:2px 0 0 2px}
 .book.single::after{left:4%!important;right:4%!important}
 .book.single .face.front::after{background:linear-gradient(90deg,rgba(0,0,0,.18) 0%,transparent 4%)}
 .hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.45);pointer-events:none;transition:opacity .6s}
@@ -76,18 +83,18 @@ let start=1;const books=BOOKS.map(([n,c],i)=>{const pages=[];for(let k=0;k<c;k++
 const tabs=document.querySelector(".tabs"),book=document.getElementById("book"),stage=document.getElementById("stage"),
 prev=document.getElementById("prev"),next=document.getElementById("next"),count=document.getElementById("count"),meta=document.getElementById("meta"),hint=document.getElementById("hint");
 let cur=0,leaves=[],pos=0,real=0;
-let mode="";const isSingle=()=>innerWidth<innerHeight&&innerWidth<1000;
+let mode="",busy=false;const isSingle=()=>innerWidth<innerHeight&&innerWidth<1000;
 function size(){const r=stage.getBoundingClientRect();const R=1.2106;
  if(mode==="single"){let w=Math.min(r.width*0.92,r.height*0.9*R);book.style.width=w+"px";book.style.height=(w/R)+"px"}
  else{let h=Math.min(r.height*(innerHeight<520?0.94:0.84),(r.width*0.94)/(2*R));book.style.height=h+"px";book.style.width=(2*R*h)+"px"}}
-function setMode(){const m=isSingle()?"single":"spread";if(m!==mode){const keep=mode?pageNow():0;mode=m;book.classList.toggle("single",m==="single");size();if(books.length&&tabs.children.length){load(cur,keep)}}else size()}
+function setMode(){const m=isSingle()?"single":"spread";if(m!==mode){const keep=mode?pageNow():0;mode=m;book.classList.toggle("single",m==="single");stage.style.perspective=m==="single"?"1400px":"3200px";size();if(books.length&&tabs.children.length){load(cur,keep)}}else size()}
 function pageNow(){return mode==="single"?pos:Math.max(0,pos*2-1)}
 function load(i,startPage){cur=i;pos=0;book.innerHTML="";[...tabs.children].forEach((t,k)=>{t.setAttribute("aria-selected",k===i);if(k===i)t.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"})});
  const b=books[i];real=b.pages.length;leaves=[];
  if(mode==="single"){b.pages.forEach((src,k)=>{const el=document.createElement("div");el.className="leaf";
-   el.innerHTML=`<div class="face front ${k===0||k===real-1?"cover":""}" style="background-image:url(${src})"></div><div class="shade"></div>`;
+   el.innerHTML=`<div class="face front ${k===0||k===real-1?"cover":""}" style="background-image:url(${src})"></div><div class="face back"></div><div class="shade"></div>`;
    el.addEventListener("click",()=>go(1));book.appendChild(el);leaves.push(el)});
-  leaves.pop&&0;meta.innerHTML=`<b>${b.no}  ${b.name}</b>${real} pages`;pos=Math.min(startPage||0,real-1);render(true);b.pages.forEach(s=>{const im=new Image();im.src=s});return}
+  const sp=document.createElement("div");sp.className="spine";book.appendChild(sp);meta.innerHTML=`<b>${b.no}  ${b.name}</b>${real} pages`;pos=Math.min(startPage||0,real-1);render(true);b.pages.forEach(s=>{const im=new Image();im.src=s});return}
  const p=[...b.pages];const back=p.pop();if(p.length%2===0)p.push(null);p.push(back);
  for(let l=0;l<p.length/2;l++){const el=document.createElement("div");el.className="leaf";
   const f=p[2*l],bk=p[2*l+1];
@@ -96,7 +103,7 @@ function load(i,startPage){cur=i;pos=0;book.innerHTML="";[...tabs.children].forE
  meta.innerHTML=`<b>${b.no}  ${b.name}</b>${real} pages`;pos=startPage?Math.min(Math.ceil(startPage/2),leaves.length):0;render(true);
  b.pages.forEach(s=>{const im=new Image();im.src=s});}
 function render(instant){const n=leaves.length;
- if(mode==="single"){leaves.forEach((el,k)=>{el.classList.toggle("flipped",k<pos);if(instant){el.style.zIndex=n-k;el.style.transition="none"}});
+ if(mode==="single"){leaves.forEach((el,k)=>{el.classList.toggle("flipped",k<pos);if(instant){el.classList.toggle("gone",k<pos);el.style.zIndex=n-k;el.style.transition="none"}});
   if(instant)requestAnimationFrame(()=>leaves.forEach(el=>el.style.transition=""));
   book.style.transform="none";prev.disabled=pos===0&&cur===0;next.disabled=pos===n-1&&cur===books.length-1;
   count.textContent=pos===0?"Cover":pos===n-1?"Back cover":`Page ${pos+1} of ${n}`;return}leaves.forEach((el,k)=>{const f=k<pos;el.classList.toggle("flipped",f);
@@ -109,8 +116,11 @@ function render(instant){const n=leaves.length;
 function go(d){const n=leaves.length;
  if(mode==="single"){if(d>0&&pos===n-1){if(cur<books.length-1)load(cur+1);return}
   if(d<0&&pos===0){if(cur>0)load(cur-1,books[cur-1].pages.length-1);return}
-  const el=leaves[d>0?pos:pos-1];el.style.zIndex=n+5;el.classList.add("turning");setTimeout(()=>{el.classList.remove("turning");el.style.zIndex=n-leaves.indexOf(el)},1100);
-  pos+=d;render(false);hint.style.opacity=0;return}
+  if(busy)return;busy=true;hint.style.opacity=0;
+  const el=leaves[d>0?pos:pos-1];el.style.zIndex=n+5;el.classList.remove("gone");book.classList.add("zoom");
+  setTimeout(()=>{el.classList.add("turning");pos+=d;render(false)},300);
+  setTimeout(()=>{el.classList.remove("turning");if(d>0)el.classList.add("gone");book.classList.remove("zoom")},1550);
+  setTimeout(()=>{el.style.zIndex=n-leaves.indexOf(el);busy=false},2000);return}
  if(d>0&&pos===n){if(cur<books.length-1)load(cur+1);return}
  if(d<0&&pos===0){if(cur>0){load(cur-1);pos=leaves.length;render(true)}return}
  const el=leaves[d>0?pos:pos-1];el.classList.add("turning");setTimeout(()=>el.classList.remove("turning"),1100);
