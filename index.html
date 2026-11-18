@@ -18,7 +18,7 @@ header img{height:34px;display:block}
 .tab:hover{color:#fff}
 .tab[aria-selected=true]{background:#fff;color:var(--navy)}
 .tab:focus-visible,.nav:focus-visible{outline:2px solid #fff;outline-offset:2px}
-main{flex:1;display:flex;align-items:center;justify-content:center;perspective:3200px;position:relative;min-height:0;touch-action:pan-y}
+main{flex:1;display:flex;align-items:center;justify-content:center;perspective:3200px;position:relative;min-height:0;touch-action:pan-y;overflow:hidden}
 .book{position:relative;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.645,.045,.355,1)}
 .book::after{content:"";position:absolute;left:0;right:0;bottom:-6%;height:10%;background:radial-gradient(50% 50% at 50% 50%,rgba(0,0,0,.45),transparent 70%);filter:blur(6px);transform:translateZ(-2px);pointer-events:none;transition:left .9s,right .9s}
 .book.closed-front::after{left:50%}
@@ -120,7 +120,7 @@ function go(d){const n=leaves.length;
   const el=leaves[d>0?pos:pos-1];el.style.zIndex=n+5;el.classList.remove("gone");book.classList.add("zoom");
   setTimeout(()=>{el.classList.add("turning");pos+=d;render(false)},300);
   setTimeout(()=>{el.classList.remove("turning");if(d>0)el.classList.add("gone");book.classList.remove("zoom")},1550);
-  setTimeout(()=>{el.style.zIndex=n-leaves.indexOf(el);busy=false},2000);return}
+  setTimeout(()=>{el.style.zIndex=n-leaves.indexOf(el);busy=false},1700);return}
  if(d>0&&pos===n){if(cur<books.length-1)load(cur+1);return}
  if(d<0&&pos===0){if(cur>0){load(cur-1);pos=leaves.length;render(true)}return}
  const el=leaves[d>0?pos:pos-1];el.classList.add("turning");setTimeout(()=>el.classList.remove("turning"),1100);
